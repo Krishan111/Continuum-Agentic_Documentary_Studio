@@ -4,6 +4,8 @@
 
 *In **simple terms**: you describe a topic, and Continuum assembles a mini-documentary from publicly available footage—not from generative video tools like Sora or Veo. It discovers real videos, pulls the most relevant clips, adds AI narration, and stitches everything into one short film.*
 
+🎥 **Watch Demo Video:** [Click Here](https://www.youtube.com/watch?v=yEZkUs7kPdY)
+
 Continuum turns a prompt on a topic into a watchable mini-documentary assembled from real YouTube archival footage—not AI-generated pixels. Agents **see** footage (visual indexing), **hear** it (spoken-word and audio semantics), **plan** a film (director + scriptwriter), **retrieve** evidence-backed clips per scene, **narrate** with VideoDB voice, and **compose** a broadcast-style timeline with programmatic editing.
 
 Built for the **VideoDB Global Online Hackathon — Give Agents Eyes and Ears**.
@@ -14,7 +16,7 @@ Built for the **VideoDB Global Online Hackathon — Give Agents Eyes and Ears**.
 
 - [What problem does Continuum solve?](#what-problem-does-continuum-solve)
 - [Demo at a glance](#demo-at-a-glance)
-- [Architecture](#architecture) — detailed flowcharts in [ARCHITECTURE.md](./ARCHITECTURE.md)
+- [Architecture](#architecture) — flowcharts + voice providers in [ARCHITECTURE.md](./ARCHITECTURE.md) (§5)
 - [VideoDB APIs used](#videodb-apis-used)
 - [Prerequisites](#prerequisites)
 - [**Local setup (step by step)**](#local-setup-step-by-step)
