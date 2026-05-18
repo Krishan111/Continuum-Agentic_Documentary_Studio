@@ -133,7 +133,7 @@ sequenceDiagram
   participant C as Clip selector
   participant N as Narrator
 
-  U->>API: POST /api/documentaries { topic }
+  U->>API: POST /api/documentaries (topic)
   API->>O: run_documentary_pipeline(job_id)
   API-->>U: job_id (poll)
 
@@ -176,7 +176,7 @@ sequenceDiagram
   V-->>O: stream_url, player_url
 
   O->>API: stage=ready, stream_url
-  U->>API: GET /api/documentaries/{id}
+  U->>API: GET /api/documentaries by job id
   API-->>U: player + metadata
 ```
 
@@ -252,38 +252,38 @@ flowchart TB
 ```mermaid
 flowchart TB
   subgraph Job["Per-job VideoDB resources"]
-    Coll[Collection\ncontinuum-{job_id}]
-    Cap[Capture session]
-    Vids[Uploaded videos]
+    Coll["Collection per job<br/>continuum plus job id"]
+    Cap["Capture session"]
+    Vids["Uploaded videos"]
     Coll --> Cap
     Coll --> Vids
   end
 
-  subgraph Index["Triple index (per video)"]
-    SW[index_spoken_words]
-    VIS[index_visuals\n+ scene index]
-    AUD[index_audio semantics]
+  subgraph Index["Triple index per video"]
+    SW["index_spoken_words"]
+    VIS["index_visuals<br/>scene index"]
+    AUD["index_audio semantics"]
     Vids --> SW
     Vids --> VIS
     Vids --> AUD
   end
 
   subgraph Retrieve["Per chapter"]
-    SRCH[search / search_inside_video\nspoken + scene]
+    SRCH["search and search_inside_video<br/>spoken plus scene"]
     SW --> SRCH
     VIS --> SRCH
   end
 
   subgraph Output["Final render"]
-    VO[generate_voice]
-    TL[Timeline API\nvideo + text + audio tracks]
-    STR[generate_stream]
+    VO["generate_voice"]
+    TL["Timeline API<br/>video, text, audio tracks"]
+    STR["generate_stream"]
     SRCH --> TL
     VO --> TL
     TL --> STR
   end
 
-  STR --> Player[Browser / VideoDB player URL]
+  STR --> Player["Browser or VideoDB player URL"]
 ```
 
 ---
@@ -299,7 +299,7 @@ flowchart LR
     L[B-roll lead\n~1.5s]
     V[Narration audio\nstarts after lead]
     T[B-roll tail\n~0.7s]
-    P[Pause\n≥0.8s]
+    P["Pause min 0.8s"]
     L --> V --> T --> P
   end
 
@@ -329,7 +329,7 @@ flowchart TB
     T1[Short user prompt]
     T1 --> OptAPI[POST /api/optimize-prompt]
     OptAPI --> OptAgent[prompt_optimizer.py]
-    OptAgent --> T2[Structured topic ≤499 chars]
+    OptAgent --> T2["Structured topic max 499 chars"]
   end
 
   subgraph CreatePath["Create documentary"]
@@ -337,7 +337,7 @@ flowchart TB
     T1 --> CreateAPI
     CreateAPI --> Job[JobRecord\ntopic, stage, progress]
     Job --> BG[BackgroundTasks\npipeline thread]
-    BG --> Pipeline[Full pipeline §3]
+    BG --> Pipeline["Full pipeline section 3"]
     Pipeline --> Meta[Job metadata\nfilm_title, clips, duration]
   end
 
