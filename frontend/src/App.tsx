@@ -16,6 +16,7 @@ const DEMO_TOPICS = [
 ];
 
 const POLL_MS = 2500;
+const DURATION_REMINDER_MS = 5000;
 
 export default function App() {
   const [topic, setTopic] = useState("");
@@ -27,6 +28,17 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showDurationReminder, setShowDurationReminder] = useState(false);
+  const [durationReminderKey, setDurationReminderKey] = useState(0);
+
+  useEffect(() => {
+    if (!showDurationReminder) return;
+    const id = window.setTimeout(
+      () => setShowDurationReminder(false),
+      DURATION_REMINDER_MS
+    );
+    return () => window.clearTimeout(id);
+  }, [showDurationReminder, durationReminderKey]);
 
   const poll = useCallback(async (jobId: string) => {
     try {
@@ -51,6 +63,8 @@ export default function App() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setShowDurationReminder(true);
+    setDurationReminderKey((k) => k + 1);
     setLoading(true);
     setJob(null);
     try {
@@ -100,6 +114,11 @@ export default function App() {
 
   return (
     <div className="page">
+      {showDurationReminder && (
+        <div className="duration-reminder" role="status" aria-live="polite">
+          The process of creating video might take anywhere between 5-15 minutes.
+        </div>
+      )}
       <header className="hero">
         <p className="eyebrow">Powered by VideoDB</p>
         <h1>Continuum</h1>

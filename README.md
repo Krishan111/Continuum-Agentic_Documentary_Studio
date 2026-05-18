@@ -1,8 +1,8 @@
-# 🎬Continuum
+# 🎬 Continuum
 
 **An agentic documentary studio powered by [VideoDB](https://videodb.io).**
 
-*In **simple terms** it builds Mini-Documentary videos based on your inputs/prompts.*
+*In **simple terms**: you describe a topic, and Continuum assembles a mini-documentary from publicly available footage—not from generative video tools like Sora or Veo. It discovers real videos, pulls the most relevant clips, adds AI narration, and stitches everything into one short film.*
 
 Continuum turns a prompt on a topic into a watchable mini-documentary assembled from real YouTube archival footage—not AI-generated pixels. Agents **see** footage (visual indexing), **hear** it (spoken-word and audio semantics), **plan** a film (director + scriptwriter), **retrieve** evidence-backed clips per scene, **narrate** with VideoDB voice, and **compose** a broadcast-style timeline with programmatic editing.
 
@@ -21,6 +21,7 @@ Built for the **VideoDB Global Online Hackathon — Give Agents Eyes and Ears**.
 - [Running the app](#running-the-app)
 - [How it works (technical decisions)](#how-it-works-technical-decisions)
 - [Project structure](#project-structure)
+- [Voice generation (switch provider)](#voice-generation-switch-provider)
 - [Configuration reference](#configuration-reference)
 - [API overview](#api-overview)
 - [Known limitations](#known-limitations)
@@ -352,6 +353,7 @@ continuum/
 │   └── app/
 │       ├── main.py             # FastAPI routes
 │       ├── agents/             # director, scriptwriter, planner, clips, narrator, prompt_optimizer
+│       ├── voice/              # pluggable TTS: videodb_default, videodb_sandbox, openai_tts
 │       ├── discovery/          # YouTube source discovery
 │       ├── pipeline/           # ingest, index, search, compose, orchestrator
 │       ├── videodb_client.py
@@ -363,6 +365,78 @@ continuum/
     ├── run_backend.ps1
     └── smoke_test.py
 ```
+
+---
+
+## Voice generation (switch provider)
+
+Narration is generated through a **single pipeline flag** so judges and reviewers can run Continuum without VideoDB voice credits. Audio is always stored in VideoDB and used on the same timeline compose path.
+
+### How to switch provider
+
+1. Open `continuum/.env`.
+2. Set **`CONTINUUM_VOICE_PROVIDER`** to one of:
+
+| Value | When to use |
+|-------|-------------|
+| `openai_tts` | **Recommended for evaluation** — uses OpenAI TTS, uploads MP3 to VideoDB (no VideoDB voice quota) |
+| `videodb_sandbox` | **Our primary hackathon demo** — OmniVoice on [VideoDB Sandbox](https://github.com/video-db/videodb-cookbook/blob/hackathon/guides/sandbox/sandbox_compute.ipynb) compute |
+| `videodb_default` | VideoDB hosted `Default` voice (subject to plan GenAI caps) |
+
+3. Restart the backend (`.\scripts\run_backend.ps1` or uvicorn).
+4. Confirm: `GET http://127.0.0.1:8000/health` → check `voice_provider` and `voice_provider_label`.
+
+Example for judges (minimal setup):
+
+```env
+CONTINUUM_VOICE_PROVIDER=openai_tts
+OPENAI_API_KEY=your_key
+OPENAI_TTS_MODEL=tts-1-hd
+OPENAI_TTS_VOICE=onyx
+```
+
+Example for full VideoDB hackathon path (after creating a sandbox):
+
+```env
+CONTINUUM_VOICE_PROVIDER=videodb_sandbox
+VIDEO_DB_SANDBOX_ID=your-sandbox-id
+```
+
+Create a sandbox: `backend\.venv\Scripts\python.exe scripts\create_sandbox.py` (from `continuum/`).
+
+### Which provider we used (submission)
+
+| Aspect | Choice |
+|--------|--------|
+| **Primary demo / intended path** | `videodb_sandbox` — OmniVoice on Sandbox (`SandboxModel.OMNIVOICE`, tier `small`) |
+| **Why** | Deep VideoDB usage, bypasses default plan voice caps, supports voice-design `instructions` |
+| **Evaluation / no voice credits** | `openai_tts` — same pipeline, different TTS backend |
+
+Implementation lives in `backend/app/voice/` (one module per provider); the orchestrator only calls `generate_chapter_narration()`.
+
+### Recommended settings (what works best)
+
+**`openai_tts` (evaluation)**
+
+| Variable | Recommended | Notes |
+|----------|-------------|--------|
+| `OPENAI_TTS_MODEL` | `tts-1-hd` | Clearer documentary tone; use `tts-1` for faster/cheaper runs |
+| `OPENAI_TTS_VOICE` | `onyx` | Deep, neutral narrator; try `nova` or `alloy` for a lighter tone |
+| `OPENAI_TTS_SPEED` | `1.0` | `0.95`–`1.05` if chapters feel rushed or slow |
+
+**`videodb_sandbox` (hackathon demo)**
+
+| Variable | Recommended | Notes |
+|----------|-------------|--------|
+| `VIDEO_DB_SANDBOX_TIER` | `small` | Enough for OmniVoice |
+| `VIDEO_DB_VOICE_INSTRUCTIONS` | Documentary narrator, moderate pace, authoritative | Passed to OmniVoice voice-design |
+| SDK | `git+https://github.com/Video-DB/videodb-python.git@hackathon` | Required for sandbox APIs |
+
+**`videodb_default`**
+
+| Variable | Recommended | Notes |
+|----------|-------------|--------|
+| `VIDEO_DB_DEFAULT_VOICE_NAME` | `Default` | Hosted VideoDB voice; hits plan limits quickly |
 
 ---
 
@@ -382,6 +456,15 @@ continuum/
 | `CONTINUUM_DISABLE_TQDM` | `1` via runtime | Set `0` to show VideoDB progress bars |
 | `CONTINUUM_QUIET_CONSOLE` | optional | Reduces console log noise |
 | `CONTINUUM_LOG_TO_FILE` | optional | Log to `continuum/logs/backend.log` |
+| `CONTINUUM_VOICE_PROVIDER` | `openai_tts`* | `videodb_default` \| `videodb_sandbox` \| `openai_tts` |
+| `OPENAI_TTS_MODEL` | `tts-1-hd` | When provider is `openai_tts` |
+| `OPENAI_TTS_VOICE` | `onyx` | OpenAI voice name |
+| `OPENAI_TTS_SPEED` | `1.0` | Speech speed |
+| `VIDEO_DB_DEFAULT_VOICE_NAME` | `Default` | When provider is `videodb_default` |
+| `VIDEO_DB_SANDBOX_ID` | empty | When provider is `videodb_sandbox` |
+| `VIDEO_DB_SANDBOX_AUTO_CREATE` | `0` | Create sandbox on first narration if `1` |
+
+\*If unset: legacy `VIDEO_DB_USE_SANDBOX_VOICE=1` → `videodb_sandbox`, else `openai_tts`.
 
 ---
 
@@ -410,6 +493,7 @@ Honest boundaries of this hackathon build:
 | **Human-in-the-loop** | No storyboard approval gate before voice/compose. |
 | **Licensing** | Does not verify YouTube rights for remix; educational/hackathon use only. |
 | **Platform quirks** | Windows minimized console can slow jobs unless tqdm is disabled (see runtime). |
+| **Voice quotas** | `videodb_default` / sandbox billing differ; use `openai_tts` if VideoDB voice credits are exhausted (see [Voice generation](#voice-generation-switch-provider)). |
 
 ---
 

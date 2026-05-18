@@ -14,6 +14,7 @@ from app.models import PipelineStage
 from app.pipeline.compose import ChapterSegment, build_documentary
 from app.pipeline.index_media import index_sources
 from app.pipeline.ingest import upload_sources
+from app.voice import active_provider_id, provider_label
 from app.videodb_client import create_job_collection, get_connection
 
 logger = logging.getLogger(__name__)
@@ -170,6 +171,8 @@ def run_documentary_pipeline(job_id: str) -> None:
                     len({s.clip.video_id for s in segments}),
                 ),
                 "used_compile_montage": output.get("used_compile_montage", False),
+                "voice_provider": active_provider_id(),
+                "voice_provider_label": provider_label(active_provider_id()),
             },
         )
         logger.info("Job %s complete: %s", job_id, output["stream_url"])

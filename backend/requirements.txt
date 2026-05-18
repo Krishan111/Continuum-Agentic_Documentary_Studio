@@ -1,4 +1,5 @@
-videodb>=0.2.0
+# Hackathon branch — Sandbox + OmniVoice (required for sandbox voice)
+videodb @ git+https://github.com/Video-DB/videodb-python.git@hackathon
 python-dotenv>=1.0.0
 fastapi>=0.115.0
 uvicorn[standard]>=0.32.0

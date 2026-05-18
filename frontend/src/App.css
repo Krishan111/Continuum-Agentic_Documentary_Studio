@@ -302,3 +302,33 @@
 .footer a {
   color: var(--accent);
 }
+
+.duration-reminder {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  max-width: min(420px, calc(100vw - 2rem));
+  padding: 0.85rem 1.25rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  text-align: center;
+  color: var(--text);
+  background: var(--bg-elevated);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  animation: duration-reminder-in 0.25s ease-out;
+}
+
+@keyframes duration-reminder-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}

@@ -19,7 +19,8 @@ bootstrap_runtime()
 from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import get_settings
+from app.config import VALID_VOICE_PROVIDERS, get_settings
+from app.voice import active_provider_id, provider_label
 from app.jobs import job_store
 from app.agents.prompt_optimizer import optimize_prompt
 from app.models import (
@@ -46,6 +47,19 @@ async def lifespan(_app: FastAPI):
     if not settings.openai_api_key:
         logger.warning(
             "OPENAI_API_KEY is not set — using rule-based chapter plans only"
+        )
+    provider = settings.resolved_voice_provider
+    if provider not in VALID_VOICE_PROVIDERS:
+        logger.error(
+            "Invalid CONTINUUM_VOICE_PROVIDER=%r — use one of %s",
+            provider,
+            sorted(VALID_VOICE_PROVIDERS),
+        )
+    else:
+        logger.info(
+            "Voice provider: %s (%s)",
+            provider,
+            provider_label(provider),
         )
     yield
 
@@ -74,12 +88,16 @@ def _run_pipeline_thread(job_id: str) -> None:
 @app.get("/health")
 def health():
     s = get_settings()
+    provider = active_provider_id()
     return {
         "status": "ok",
         "service": "continuum",
         "videodb_configured": s.has_videodb,
         "openai_configured": s.has_openai,
         "openai_model": s.openai_model,
+        "voice_provider": provider,
+        "voice_provider_label": provider_label(provider),
+        "voice_providers_available": sorted(VALID_VOICE_PROVIDERS),
     }
 
 
