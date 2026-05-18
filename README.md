@@ -1,4 +1,4 @@
-# Continuum
+# 🎬Continuum
 
 **An agentic documentary studio powered by [VideoDB](https://videodb.io).**
 
